@@ -1,0 +1,109 @@
+DELIMITER $$
+DROP FUNCTION IF EXISTS test.estado$$
+CREATE FUNCTION test.estado(in_estado CHAR(1))
+	RETURNS VARCHAR(20)
+BEGIN
+DECLARE estado VARCHAR(20);
+	IF in_estado='P' THEN
+		SET estado='caducado';
+	ELSEIF in_estado='O' THEN
+		SET estado='activo';
+	ELSEIF in_estado='N' THEN
+		SET estado='nuevo';
+	END IF;
+RETURN(estado);
+END$$
+
+-- Determina si un número es par o impar
+DELIMITER $$
+DROP FUNCTION IF EXISTS test.par$$
+CREATE FUNCTION test.par(numero INT)
+	RETURNS boolean
+BEGIN
+	IF MOD(numero,2)=0 THEN
+		RETURN TRUE;
+	ELSE
+		RETURN FALSE;
+	END IF;
+END$$
+
+-- Ejemplo uso de funciones dentro de un procedimiento
+DELIMITER $$
+DROP PROCEDURE IF EXISTS test.muestra_estado$$
+CREATE PROCEDURE test.muestra_estado(in numero int)
+BEGIN
+	IF (test.par(numero)) THEN
+		SELECT CONCAT(numero, " es par");
+	ELSE
+		SELECT CONCAT(numero, " es impar");
+	END IF;
+END$$
+
+-- Ejemplo07: importe_bruto
+-- RETURNS: el importe bruto de una venta
+-- Parémtros: id de la venta
+DELIMITER $$
+DROP FUNCTION IF EXISTS geslibros.importe_bruto$$
+CREATE FUNCTION geslibros.importe_bruto(id_venta INT UNSIGNED)
+	RETURNS DECIMAL(10,2)
+BEGIN
+	DECLARE importe_bruto DECIMAL(10,2);
+	SET importe_bruto =
+	 (SELECT SUM(importe) FROM geslibros.lineasventas WHERE venta_id = id_venta);
+
+RETURN(importe_bruto);
+END$$
+
+-- Ejemplo08: actualizar_importe_ventas
+-- Parémtros: id venta
+-- Descripción: usando la función importeventa para actualizar la columna
+-- importebruto de la tabla ventas.
+DELIMITER $$
+DROP PROCEDURE IF EXISTS geslibros.actualizar_importe_bruto $$
+CREATE PROCEDURE geslibros.actualizar_importe_bruto(IN venta_id INT UNSIGNED)
+BEGIN
+	UPDATE geslibros.ventas SET importe_bruto = geslibros.importe_bruto(venta_id) WHERE
+	id = venta_id;
+END $$
+
+-- Ejemplo09: importe_iva
+-- RETURNS: el importe iva de una venta
+-- Parémtros: id de la venta
+DELIMITER $$
+DROP FUNCTION IF EXISTS geslibros.importe_iva$$
+CREATE FUNCTION geslibros.importe_iva(id_venta INT UNSIGNED)
+	RETURNS DECIMAL(10,2)
+BEGIN
+	DECLARE importe_iva DECIMAL(10,2);
+	SET importe_iva =
+	 (SELECT SUM(importe * iva) FROM geslibros.lineasventas WHERE venta_id = id_venta);
+
+	RETURN(importe_iva);
+END$$
+
+-- Ejemplo10: actualizar_importe_iva
+-- Parémtros: id venta
+-- Descripción: usando la función importe_iva para actualizar la columna
+-- importe_iva de la tabla ventas.
+DELIMITER $$
+DROP PROCEDURE IF EXISTS geslibros.actualizar_importe_iva $$
+CREATE PROCEDURE geslibros.actualizar_importe_iva(IN venta_id INT UNSIGNED)
+BEGIN
+	UPDATE geslibros.ventas SET importe_iva = geslibros.importe_iva(venta_id) WHERE
+	id = venta_id;
+END $$
+
+-- Ejemplo11: actualizar_importe_total
+-- Tipo: Procedimiento
+-- Descripción: Actualizar el importe total de una venta a partir del importe bruto y el importe iva
+DELIMITER $$
+DROP PROCEDURE IF EXISTS geslibros.actualizar_importe_total $$
+CREATE PROCEDURE geslibros.actualizar_importe_total(venta_id INT UNSIGNED)
+BEGIN
+	UPDATE geslibros.ventas 
+    SET importe_total = importe_bruto(venta_id) + importe_iva(venta_id)
+	-- SET importe_total = importe_bruto + importe_iva
+    WHERE id = venta_id;
+END $$
+
+
